@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "NODE_ENV=test jest --verbose --runInBand",
     "lint": "eslint ."
   },
   "author": "Tomi Lilja",
@@ -19,6 +19,11 @@
   },
   "devDependencies": {
     "eslint": "^7.6.0",
-    "nodemon": "^2.0.4"
+    "jest": "^26.2.2",
+    "nodemon": "^2.0.4",
+    "supertest": "^4.0.2"
+  },
+  "jest": {
+    "testEnvironment": "node"
   }
 }
