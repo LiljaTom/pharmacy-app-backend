@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
+require('express-async-errors')
 
 // Utils
 const config = require('./utils/config')
