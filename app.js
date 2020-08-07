@@ -11,6 +11,7 @@ const middleware = require('./utils/middleware')
 // Routers
 const productsRouter = require('./controllers/products')
 const usersRouter = require('./controllers/users')
+const loginRouter = require('./controllers/login')
 
 
 logger.info('connecting to database')
@@ -28,6 +29,7 @@ app.use(middleware.requestLogger)
 
 app.use('/api/products', productsRouter)
 app.use('/api/users', usersRouter)
+app.use('/api/login', loginRouter)
 
 app.use(middleware.unknownEndpoint)
 app.use(middleware.errorHandler)
