@@ -1,13 +1,17 @@
 const mongoose = require('mongoose')
 const supertest = require('supertest')
-const Product= require('../models/product')
-const helper = require('./product_test_helper')
+const helper = require('./test_helper')
+const bcrypt = require('bcrypt')
 
 const app = require('../app')
 const api = supertest(app)
 
+const Product = require('../models/product')
+const User = require('../models/user')
 
-describe('Initial situation', () => {
+
+
+describe('Initial product situation', () => {
   beforeEach(async() => {
     await Product.deleteMany({})
     const productObjects = helper.initialProducts
@@ -133,6 +137,64 @@ describe('Deletion of product', () => {
     expect(contents).not.toContain(productToDelete.name)
     expect(productsAtEnd).toHaveLength(helper.initialProducts.length - 1)
   })
+})
+
+describe('Initial user situation', () => {
+  beforeEach(async() => {
+    await User.deleteMany({})
+
+    const passwordHash = await bcrypt.hash('password', 10)
+    const user = new User({ username: 'tester', passwordHash })
+
+    await user.save()
+  })
+
+  test('can create user with unique username', async() => {
+    const usersAtStart = await helper.usersInDB()
+
+    const user = {
+      username: 'newUser',
+      name: 'User',
+      password: 'solidPassword'
+    }
+    await api
+      .post('/api/users')
+      .send(user)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    const usersAtEnd = await helper.usersInDB()
+    const usernames = usersAtEnd.map(u => u.username)
+
+    expect(usersAtEnd).toHaveLength(usersAtStart.length + 1)
+    expect(usernames).toContain(user.username)
+  })
+
+  test('Creation fails with non unique username and returns valid status and message', async() => {
+    const usersAtStart = await helper.usersInDB()
+
+    const invalidUser = {
+      username: 'tester',
+      name: 'Invalid',
+      password: 'password'
+    }
+
+    const result = await api
+      .post('/api/users')
+      .send(invalidUser)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+
+    const usersAtEnd = await helper.usersInDB()
+    const names = usersAtEnd.map(u => u.username)
+
+    expect(result.body.error).toContain('`username` to be unique')
+    expect(usersAtEnd).toHaveLength(usersAtStart.length)
+    expect(names).not.toContain(invalidUser.name)
+  })
+
+
+
 })
 
 
