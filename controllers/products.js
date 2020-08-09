@@ -6,20 +6,16 @@ productsRouter.get('/', async(req, res) => {
   res.json(products.map(p => p.toJSON()))
 })
 
-productsRouter.get('/:id', async(req, res, next) => {
-  try {
-    const product = await Product.findById(req.params.id)
-    if(product) {
-      res.json(product.toJSON())
-    } else {
-      res.status(404).end()
-    }
-  } catch(exception) {
-    next(exception)
+productsRouter.get('/:id', async(req, res) => {
+  const product = await Product.findById(req.params.id)
+  if(product) {
+    res.json(product.toJSON())
+  } else {
+    res.status(404).end()
   }
 })
 
-productsRouter.post('/', async(req, res, next) => {
+productsRouter.post('/', async(req, res) => {
   const body = req.body
 
   const product = new Product({
@@ -28,21 +24,16 @@ productsRouter.post('/', async(req, res, next) => {
     price: body.price,
     prescription: body.prescription
   })
-  try {
-    const savedProduct= await product.save()
-    res.json(savedProduct.toJSON())
-  } catch(expection) {
-    next(expection)
-  }
+
+  const savedProduct= await product.save()
+  res.status(201).json(savedProduct)
+
 })
 
-productsRouter.delete('/:id', async(req, res, next) => {
-  try {
-    await Product.findByIdAndRemove(req.params.id)
-    res.status(204).end()
-  } catch(exception) {
-    next(exception)
-  }
+productsRouter.delete('/:id', async(req, res) => {
+  const product = await Product.findById(req.params.id)
+  await product.remove()
+  res.status(204).end()
 })
 
 productsRouter.put('/:id', async(req, res) => {

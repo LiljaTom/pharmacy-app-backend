@@ -8,6 +8,7 @@ const api = supertest(app)
 
 const Product = require('../models/product')
 const User = require('../models/user')
+const Order = require('../models/order')
 
 
 
@@ -68,7 +69,7 @@ describe('Addition of products', () => {
     await api
       .post('/api/products')
       .send(newProduct)
-      .expect(200)
+      .expect(201)
       .expect('Content-Type', /application\/json/)
 
     const products = await helper.productsInDB()
@@ -193,10 +194,64 @@ describe('Initial user situation', () => {
     expect(names).not.toContain(invalidUser.name)
   })
 
-
-
 })
 
+describe('Initial order situation', () => {
+  beforeEach(async() => {
+    await Order.deleteMany({})
+    await User.deleteMany({})
+    await Product.deleteMany({})
+
+    const productList = []
+
+    let product = new Product(helper.initialProducts[0])
+    await product.save()
+
+    productList.push(product._id)
+    product = new Product(helper.initialProducts[1])
+    await product.save()
+    productList.push(product._id)
+
+    const passwordHash = await bcrypt.hash('password', 10)
+    const user = new User({ username: 'tester', passwordHash })
+    await user.save()
+
+
+    const order = new Order({
+      date: new Date(),
+      delivered: false,
+      user: user._id,
+      products: productList
+    })
+    await order.save()
+  })
+
+  test('orders are returned as json', async() => {
+    await api
+      .get('/api/orders')
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+  })
+
+  test('returns all orders', async() => {
+    const response = await api.get('/api/orders')
+    expect(response.body).toHaveLength(1)
+  })
+
+  test('order can be edited', async() => {
+    const [orders] = await helper.ordersInDB()
+    const editedOrder = { ...orders, delivered: true }
+
+    await api
+      .put(`/api/orders/${orders.id}`)
+      .send(editedOrder)
+      .expect(200)
+
+    const ordersAtEnd = await helper.ordersInDB()
+    const edited = ordersAtEnd.find(o => o.id === orders.id)
+    expect(edited.delivered).toBe(true)
+  })
+})
 
 afterAll(() => {
   mongoose.connection.close()
