@@ -1,5 +1,7 @@
 const productsRouter = require('express').Router()
 const Product = require('../models/product')
+const User = require('../models/user')
+const jwt = require('jsonwebtoken')
 
 productsRouter.get('/', async(req, res) => {
   const products = await Product.find({})
@@ -17,6 +19,17 @@ productsRouter.get('/:id', async(req, res) => {
 
 productsRouter.post('/', async(req, res) => {
   const body = req.body
+  const decodedToken = jwt.verify(req.token, process.env.SECRET)
+
+  if(!req.token || !decodedToken.id) {
+    return res.status(401).json({ error: 'Invalid or missing token' })
+  }
+
+  const user = await User.findById(decodedToken.id)
+
+  if(user.username !== 'Admin') {
+    return res.status(401).json({ error: 'Only admin can create product' })
+  }
 
   const product = new Product({
     name: body.name,
@@ -31,6 +44,19 @@ productsRouter.post('/', async(req, res) => {
 })
 
 productsRouter.delete('/:id', async(req, res) => {
+  const decodedToken = jwt.verify(req.token, process.env.SECRET)
+
+
+  if(!req.token || !decodedToken.id) {
+    return res.status(401).json({ error: 'Invalid or missing token' })
+  }
+
+  const user = await User.findById(decodedToken.id)
+
+  if(user.username !== 'Admin') {
+    return res.status(401).json({ error: 'Only admin can delete products' })
+  }
+
   const product = await Product.findById(req.params.id)
   await product.remove()
   res.status(204).end()
@@ -38,6 +64,17 @@ productsRouter.delete('/:id', async(req, res) => {
 
 productsRouter.put('/:id', async(req, res) => {
   const product = req.body
+  const decodedToken = jwt.verify(req.token, process.env.SECRET)
+
+  if(!req.token || !decodedToken.id) {
+    return res.status(401).json({ error: 'Invalid or missing token' })
+  }
+
+  const user = await User.findById(decodedToken.id)
+
+  if(user.username !== 'Admin') {
+    return res.status(401).json({ error: 'Only admin can delete products' })
+  }
 
   const updatedProduct = await Product.findByIdAndUpdate(req.params.id, product, { new: true })
   res.json(updatedProduct.toJSON())

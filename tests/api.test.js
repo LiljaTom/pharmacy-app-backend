@@ -11,14 +11,21 @@ const User = require('../models/user')
 const Order = require('../models/order')
 
 
-
+//done
 describe('Initial product situation', () => {
+  let headers
   beforeEach(async() => {
     await Product.deleteMany({})
+    await User.deleteMany({})
     const productObjects = helper.initialProducts
       .map(p => new Product(p))
     const promiseArray = productObjects.map(p => p.save())
     await Promise.all(promiseArray)
+
+    const admin = helper.getAdmin()
+    await api.post('/api/users').send(admin)
+    const result = await api.post('/api/login').send(admin)
+    headers = { 'Authorization': `bearer ${result.body.token}` }
   })
 
   test('products are returned as json', async() => {
@@ -33,13 +40,14 @@ describe('Initial product situation', () => {
     expect(response.body).toHaveLength(helper.initialProducts.length)
   })
 
-  test('Product can be edited', async() => {
+  test('Admin can edit product', async() => {
     const [products] = await helper.productsInDB()
     const editedProduct = { ...products, size: products.size + 5 }
 
     await api
       .put(`/api/products/${products.id}`)
       .send(editedProduct)
+      .set(headers)
       .expect(200)
 
     const productsAtEnd = await helper.productsInDB()
@@ -47,18 +55,38 @@ describe('Initial product situation', () => {
     expect(edited.size).toBe(products.size + 5)
 
   })
+
+  test('Unauthorized user cannot edit product', async() => {
+    const [products] = await helper.productsInDB()
+    const editedProduct = { ...products, size: products.size + 5 }
+
+    await api
+      .put(`/api/products/${products.id}`)
+      .send(editedProduct)
+      .expect(401)
+  })
 })
 
+//Added admin stuff
 describe('Addition of products', () => {
+  let headers
   beforeEach(async() => {
     await Product.deleteMany({})
+    await User.deleteMany({})
+
     const productObjects = helper.initialProducts
       .map(p => new Product(p))
     const promiseArray = productObjects.map(p => p.save())
     await Promise.all(promiseArray)
+
+    const admin = helper.getAdmin()
+    await api.post('/api/users').send(admin)
+    const result = await api.post('/api/login').send(admin)
+
+    headers = { 'Authorization': `bearer ${result.body.token}` }
   })
 
-  test('Valid product can be added', async() => {
+  test('Admin can add valid product', async() => {
     const newProduct = {
       name: 'ValidProduct',
       size: 20,
@@ -69,6 +97,7 @@ describe('Addition of products', () => {
     await api
       .post('/api/products')
       .send(newProduct)
+      .set(headers)
       .expect(201)
       .expect('Content-Type', /application\/json/)
 
@@ -84,13 +113,24 @@ describe('Addition of products', () => {
       name: 'Invalid product'
     }
 
-    await api.post('/api/products').send(newProduct).expect(400)
+    await api.post('/api/products').send(newProduct).set(headers).expect(400)
 
     const productsAtEnd = await helper.productsInDB()
     expect(productsAtEnd).toHaveLength(helper.initialProducts.length)
   })
+
+  test('Unauthorized user cannot add valid product', async() => {
+    const newProduct = {
+      name: 'ValidProduct',
+      size: 20,
+      price: 7.90,
+      prescription: true
+    }
+    await api.post('/api/products').send(newProduct).expect(401)
+  })
 })
 
+//done
 describe('Viewing a certain product', () => {
   test('Is succesfull with valid id', async() => {
     const productsAtStart = await helper.productsInDB()
@@ -122,13 +162,26 @@ describe('Viewing a certain product', () => {
   })
 })
 
+//done
 describe('Deletion of product', () => {
+  let headers
+  beforeEach(async() => {
+    await User.deleteMany({})
+    const admin = helper.getAdmin()
+
+    await api.post('/api/users').send(admin)
+    const result = await api.post('/api/login').send(admin)
+
+    headers = { 'Authorization': `bearer ${result.body.token}` }
+  })
+
   test('Is succesfull if id is valid and return status 204', async() => {
     const productsAtStart = await helper.productsInDB()
     const productToDelete = productsAtStart[0]
 
     await api
       .delete(`/api/products/${productToDelete.id}`)
+      .set(headers)
       .expect(204)
 
     const productsAtEnd = await helper.productsInDB()
@@ -138,8 +191,18 @@ describe('Deletion of product', () => {
     expect(contents).not.toContain(productToDelete.name)
     expect(productsAtEnd).toHaveLength(helper.initialProducts.length - 1)
   })
+
+  test('Unauthorized user cannot delete product', async() => {
+    const productsAtStart = await helper.productsInDB()
+    const productToDelete = productsAtStart[0]
+
+    await api
+      .delete(`/api/products/${productToDelete.id}`)
+      .expect(401)
+  } )
 })
 
+//done
 describe('Initial user situation', () => {
   beforeEach(async() => {
     await User.deleteMany({})
@@ -250,6 +313,17 @@ describe('Initial order situation', () => {
     const ordersAtEnd = await helper.ordersInDB()
     const edited = ordersAtEnd.find(o => o.id === orders.id)
     expect(edited.delivered).toBe(true)
+  })
+
+  test('Can delete order', async() => {
+    const ordersAtStart = await helper.ordersInDB()
+    const orderToDelete = ordersAtStart[0]
+
+    await api.delete(`/api/orders/${orderToDelete.id}`).expect(204)
+
+    const ordersAtEnd = await helper.ordersInDB()
+
+    expect(ordersAtEnd).toHaveLength(ordersAtStart.length - 1)
   })
 })
 

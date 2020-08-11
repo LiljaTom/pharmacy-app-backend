@@ -42,6 +42,15 @@ const ordersInDB = async() => {
   return orders.map(o => o.toJSON())
 }
 
+const getAdmin = () => {
+  const admin = {
+    username: 'Admin',
+    name: 'TLilja',
+    password: 'admin'
+  }
+  return admin
+}
+
 module.exports = {
-  initialProducts, nonExistingId, productsInDB, usersInDB, ordersInDB
+  initialProducts, nonExistingId, productsInDB, usersInDB, ordersInDB, getAdmin
 }

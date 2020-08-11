@@ -2,6 +2,7 @@ const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
 require('express-async-errors')
+const cors = require('cors')
 
 // Utils
 const config = require('./utils/config')
@@ -14,7 +15,7 @@ const usersRouter = require('./controllers/users')
 const loginRouter = require('./controllers/login')
 const ordersRouter = require('./controllers/orders')
 
-
+mongoose.set('useCreateIndex', true)
 
 logger.info('connecting to database')
 
@@ -26,8 +27,12 @@ mongoose.connect(config.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology
     logger.error(`Error connecting to MongoDB. Error: ${error.message}`)
   })
 
+mongoose.set('useFindAndModify', false)
+
+app.use(cors())
 app.use(express.json())
 app.use(middleware.requestLogger)
+app.use(middleware.tokenExtractor)
 
 app.use('/api/products', productsRouter)
 app.use('/api/users', usersRouter)
