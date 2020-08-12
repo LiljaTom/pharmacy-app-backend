@@ -17,6 +17,10 @@ const productSchema = mongoose.Schema({
   prescription: {
     type: Boolean,
     required: true
+  },
+  category: {
+    type: String,
+    required: true
   }
 })
 

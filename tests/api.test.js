@@ -91,7 +91,8 @@ describe('Addition of products', () => {
       name: 'ValidProduct',
       size: 20,
       price: 7.90,
-      prescription: true
+      prescription: true,
+      category: 'Sun'
     }
 
     await api
@@ -124,7 +125,8 @@ describe('Addition of products', () => {
       name: 'ValidProduct',
       size: 20,
       price: 7.90,
-      prescription: true
+      prescription: true,
+      category: 'Migrene'
     }
     await api.post('/api/products').send(newProduct).expect(401)
   })
@@ -255,6 +257,14 @@ describe('Initial user situation', () => {
     expect(result.body.error).toContain('`username` to be unique')
     expect(usersAtEnd).toHaveLength(usersAtStart.length)
     expect(names).not.toContain(invalidUser.name)
+  })
+
+  test('Login is successfull with correct password', async() => {
+    const user = {
+      username: 'tester',
+      password: 'password'
+    }
+    await api.post('/api/login').send(user).expect(200)
   })
 
 })

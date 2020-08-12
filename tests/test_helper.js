@@ -8,19 +8,21 @@ const initialProducts = [
     name: 'TestMedicine1',
     size: 60,
     price: 4.90,
-    prescription: true
+    prescription: true,
+    category: 'Vitamin'
   },
   {
     name: 'TestMedicine2',
     size: 40,
     price: 8.90,
-    prescription: false
+    prescription: false,
+    category: 'Lotion'
   }
 ]
 
 
 const nonExistingId = async() => {
-  const product = new Product({ name: 'removesoonproduct', size: 30, price: 3.80, prescription: true })
+  const product = new Product({ name: 'removesoonproduct', size: 30, price: 3.80, prescription: true, category:'somethhing' })
   await product.save()
   await product.remove()
 
