@@ -15,7 +15,7 @@ ordersRouter.get('/', async(req, res) => {
   if(user.username !== 'Admin') {
     return res.status(401).json({ error: 'Only admin can view all orders' })
   }
-  const orders = await Order.find({})
+  const orders = await Order.find({}).populate('user').populate('products')
   res.json(orders.map(o => o.toJSON()))
 })
 

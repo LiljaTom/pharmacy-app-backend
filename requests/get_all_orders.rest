@@ -1,11 +1,2 @@
-post http://localhost:3001/api/products
-Content-Type: application/json
+GET http://localhost:3001/api/orders
 Authorization: bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkFkbWluIiwiaWQiOiI1ZjMzYTM4MzBkZDdmYzZjMDg1YTM3ZTMiLCJpYXQiOjE1OTcyMjAzOTR9.4LDfD753IoON8pjI4JK7itqTMP9himU1OQb1dDppO5s
-
-{
-    "name": "RestMedicine",
-    "size": 60,
-    "price": 5.89,
-    "prescription": true,
-    "category": "TEst"
-}
