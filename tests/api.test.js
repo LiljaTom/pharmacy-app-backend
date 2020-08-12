@@ -260,6 +260,7 @@ describe('Initial user situation', () => {
 })
 
 describe('Initial order situation', () => {
+  let headers
   beforeEach(async() => {
     await Order.deleteMany({})
     await User.deleteMany({})
@@ -279,6 +280,11 @@ describe('Initial order situation', () => {
     const user = new User({ username: 'tester', passwordHash })
     await user.save()
 
+    const admin = helper.getAdmin()
+    await api.post('/api/users').send(admin)
+    const result = await api.post('/api/login').send(admin)
+
+    headers = { 'Authorization': `bearer ${result.body.token}` }
 
     const order = new Order({
       date: new Date(),
@@ -292,22 +298,24 @@ describe('Initial order situation', () => {
   test('orders are returned as json', async() => {
     await api
       .get('/api/orders')
+      .set(headers)
       .expect(200)
       .expect('Content-Type', /application\/json/)
   })
 
-  test('returns all orders', async() => {
-    const response = await api.get('/api/orders')
+  test('returns all orders for admin', async() => {
+    const response = await api.get('/api/orders').set(headers)
     expect(response.body).toHaveLength(1)
   })
 
-  test('order can be edited', async() => {
+  test('admin can edit order', async() => {
     const [orders] = await helper.ordersInDB()
     const editedOrder = { ...orders, delivered: true }
 
     await api
       .put(`/api/orders/${orders.id}`)
       .send(editedOrder)
+      .set(headers)
       .expect(200)
 
     const ordersAtEnd = await helper.ordersInDB()
@@ -315,17 +323,75 @@ describe('Initial order situation', () => {
     expect(edited.delivered).toBe(true)
   })
 
-  test('Can delete order', async() => {
+  test('admin can delete order', async() => {
     const ordersAtStart = await helper.ordersInDB()
     const orderToDelete = ordersAtStart[0]
 
-    await api.delete(`/api/orders/${orderToDelete.id}`).expect(204)
+    await api
+      .delete(`/api/orders/${orderToDelete.id}`)
+      .set(headers)
+      .expect(204)
 
     const ordersAtEnd = await helper.ordersInDB()
 
     expect(ordersAtEnd).toHaveLength(ordersAtStart.length - 1)
   })
+
+  test('Unauthorized user cannot view orders', async() => {
+    await api.get('/api/orders').expect(401)
+  })
+
+  test('Unauthorized user cannot delete order', async() => {
+    const ordersAtStart = await helper.ordersInDB()
+    const orderToDelete = ordersAtStart[0]
+
+    await api
+      .delete(`/api/orders/${orderToDelete.id}`)
+      .expect(401)
+
+    const ordersAtEnd = await helper.ordersInDB()
+
+    expect(ordersAtEnd).toHaveLength(ordersAtStart.length)
+  })
+
+  test('Unauthorized user cannot edit order', async() => {
+    const [orders] = await helper.ordersInDB()
+    const editedOrder = { ...orders, delivered: true }
+
+    await api
+      .put(`/api/orders/${orders.id}`)
+      .send(editedOrder)
+      .expect(401)
+
+    const ordersAtEnd = await helper.ordersInDB()
+    const edited = ordersAtEnd.find(o => o.id === orders.id)
+    expect(edited.delivered).toBe(false)
+  })
 })
+
+/*
+describe('Adding orders', () => {
+  beforeEach(async() => {
+    await Order.deleteMany({})
+    await Product.deleteMany({})
+
+    const passwordHash = await bcrypt.hash('password', 10)
+    const user = new User({ username: 'tester', passwordHash })
+    await user.save()
+  })
+  test('Valid order can be placed', async() => {
+    const user = await helper.usersInDB()[0]
+
+    const order = new Order({
+      date: new Date(),
+      delivered: false,
+      user: user.id
+    })
+
+
+  })
+})
+*/
 
 afterAll(() => {
   mongoose.connection.close()
